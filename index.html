@@ -134,10 +134,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span>Nuevo grupo</span>
               </button>
-              <button class="menu-item" id="menuItemQrPair">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                <span>Vincular dispositivo (QR)</span>
-              </button>
+              
               <button class="menu-item" id="menuItemDualTab">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 <span>Abrir en 2da pestaña</span>
@@ -165,16 +162,6 @@
       </header>
 
       <!-- WiFi Cell Phone Connection Banner -->
-      <div class="wifi-network-banner" id="wifiBanner">
-        <div class="wifi-banner-icon">📶</div>
-        <div class="wifi-banner-text">
-          <strong>Celular de tu hermano (WiFi):</strong>
-          <span class="wifi-url-text" id="wifiUrlText">http://192.168.101.73:3000</span>
-        </div>
-        <button id="wifiShowQrBtn" class="banner-action-btn" title="Ver código QR para escanear con la cámara">Ver QR</button>
-        <button id="wifiCopyUrlBtn" class="banner-action-btn secondary" title="Copiar dirección">Copiar</button>
-      </div>
-
       <!-- Search Bar -->
       <div class="search-container">
         <div class="search-input-box">
@@ -214,12 +201,7 @@
           </button>
           <span class="footer-status-pill"><span class="pulse-dot"></span> <span id="connectionStatusText">Sincronizado</span></span>
         </div>
-        <div class="footer-right">
-          <button id="qrCodeLinkBtn" class="text-pill-btn" title="Ver código QR de enlace">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>QR Web</span>
-          </button>
-        </div>
+        <div class="footer-right"></div>
       </footer>
     </aside>
 
@@ -546,70 +528,7 @@
     </div>
   </div>
 
-  <!-- 3. QR Code Pairing Modal (WhatsApp Web Style) -->
-  <div id="qrModal" class="modal-overlay" style="display:none;">
-    <div class="modal-card qr-modal-card">
-      <div class="modal-header">
-        <h3>Vincular con WhatsApp Web</h3>
-        <button id="closeQrModalBtn" class="icon-btn small">✕</button>
-      </div>
-      <div class="qr-modal-body">
-        <div class="qr-instructions">
-          <ol>
-            <li>Conecta el celular de tu hermano a la <strong>misma red WiFi</strong> que esta PC</li>
-            <li>Abre el navegador en su celular e ingresa a: <br><strong style="color:var(--accent-wa); font-size:1.05rem;">http://192.168.101.73:3000/?user=hermano</strong></li>
-            <li>O simplemente escanea este código QR con la <strong>cámara del celular</strong></li>
-            <li>Entra directo como Hermano (sin códigos SMS) y ¡listo para escribir en vivo!</li>
-          </ol>
-        </div>
-        <div class="qr-code-box">
-          <div class="qr-code-graphic">
-            <svg viewBox="0 0 160 160" width="160" height="160">
-              <rect width="160" height="160" fill="#ffffff" rx="10"/>
-              <!-- Authentic stylized QR Pattern -->
-              <rect x="12" y="12" width="40" height="40" fill="#111b21"/>
-              <rect x="18" y="18" width="28" height="28" fill="#ffffff"/>
-              <rect x="24" y="24" width="16" height="16" fill="#111b21"/>
-              <rect x="108" y="12" width="40" height="40" fill="#111b21"/>
-              <rect x="114" y="18" width="28" height="28" fill="#ffffff"/>
-              <rect x="120" y="24" width="16" height="16" fill="#111b21"/>
-              <rect x="12" y="108" width="40" height="40" fill="#111b21"/>
-              <rect x="18" y="114" width="28" height="28" fill="#ffffff"/>
-              <rect x="24" y="120" width="16" height="16" fill="#111b21"/>
-              <!-- Data blocks -->
-              <rect x="62" y="16" width="10" height="10" fill="#111b21"/>
-              <rect x="76" y="26" width="10" height="10" fill="#00a884"/>
-              <rect x="62" y="38" width="10" height="10" fill="#111b21"/>
-              <rect x="76" y="48" width="10" height="10" fill="#111b21"/>
-              <rect x="20" y="62" width="10" height="10" fill="#111b21"/>
-              <rect x="36" y="74" width="10" height="10" fill="#111b21"/>
-              <rect x="52" y="62" width="14" height="14" fill="#111b21"/>
-              <rect x="72" y="72" width="16" height="16" fill="#00a884"/>
-              <rect x="94" y="62" width="10" height="10" fill="#111b21"/>
-              <rect x="110" y="74" width="10" height="10" fill="#111b21"/>
-              <rect x="126" y="62" width="14" height="14" fill="#111b21"/>
-              <rect x="62" y="96" width="10" height="10" fill="#111b21"/>
-              <rect x="76" y="108" width="10" height="10" fill="#111b21"/>
-              <rect x="62" y="120" width="10" height="10" fill="#00a884"/>
-              <rect x="76" y="132" width="10" height="10" fill="#111b21"/>
-              <rect x="94" y="96" width="12" height="12" fill="#111b21"/>
-              <rect x="112" y="108" width="12" height="12" fill="#111b21"/>
-              <rect x="130" y="126" width="14" height="14" fill="#111b21"/>
-              <!-- Center WhatsApp Logo -->
-              <circle cx="80" cy="80" r="14" fill="#ffffff"/>
-              <circle cx="80" cy="80" r="12" fill="#25d366"/>
-              <path d="M76 76C75 77 75 78 77 81C79 83 80 84 81 84C82 84 83 83 84 82L83 80L82 81C81 81 80 80 79 79L80 78L78 77L76 76Z" fill="#ffffff"/>
-            </svg>
-            <div class="qr-scan-line"></div>
-          </div>
-          <span class="qr-label">Código activo y sincronizado</span>
-        </div>
-      </div>
-      <div class="qr-modal-footer">
-        <button id="qrSimulatePairBtn" class="btn primary">✓ Simular Vinculación Instantánea</button>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- 4. Switch User Modal -->
   <div id="switchUserModal" class="modal-overlay" style="display:none;">
@@ -688,7 +607,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
   <script src="shared.js"></script>
   <script src="app.js"></script>
 </body>

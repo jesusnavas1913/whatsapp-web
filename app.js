@@ -1,23 +1,9 @@
 /**
- * WhatsApp Web - Motor completo de mensajería en tiempo real por número de celular.
- * Soporta autenticación por número de teléfono (SMS simulado), creación de cuentas,
- * comunicación directa ingresando números móviles, notas de voz, fotos, estados,
- * llamadas y sincronización multi-pestaña / LAN en tiempo real.
+ * WhatsApp Web - Motor completo de mensajería en tiempo real por WiFi y número celular.
+ * Conexión directa entre Celular y PC sin bots ni respuestas simuladas.
  */
 
 const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '❤️', '🎉', '🚀', '😎', '👏', '🙌', '💯', '✨', '⚡', '🤖', '💬', '👀', '🥳', '💪', '🤩', '👋', '☕', '🌟', '🤯', '👌', '🤝', '🍕', '🎮', '💡', '🙏', '🥺', '🤣', '😴', '😜', '😇'];
-
-const BOT_REPLIES = [
-  '¡Hola! ¿Cómo estás? Me alegra verte conectado a este número 🙌',
-  '¡Totalmente de acuerdo contigo! 🔥',
-  '¡Eso suena genial! Cuéntame más detalles 💬',
-  'WhatsApp Web funcionando al 100% por número de celular ⚡',
-  'Jajaja ¡excelente mensaje! 😂👏',
-  '¡Recibido fuerte y claro en mi WhatsApp! ¿Qué más hacemos?',
-  '¡Quedó brutal la app! Se comunica directo por número de teléfono 📱🚀',
-  'Aquí estoy conectado, siempre listo para chatear ✨',
-  '¡Listo, me parece perfecto! Hablamos en un ratito 👍'
-];
 
 class WhatsAppWebApp {
   constructor() {
@@ -46,6 +32,10 @@ class WhatsAppWebApp {
     this.pendingAuthCode = '';
     this.pendingAvatarSeed = 'Nuevo';
 
+    // Conexión SSE
+    this.eventSource = null;
+    this.isServerConnected = false;
+
     // Estados transitorios de interfaz
     this.activeReply = null;
     this.activeImageAttachment = null;
@@ -69,17 +59,10 @@ class WhatsAppWebApp {
     this.initEventListeners();
     this.applyTheme(localStorage.getItem(this.themeKey) || 'dark');
 
-    // Verificar si requiere login
-    if (!this.currentUser) {
-      this.openAuthScreen();
-    } else {
-      this.initAfterLogin();
-    }
-
-    // Conexión Server-Sent Events si hay servidor Node
+    // Conectar a SSE si hay servidor Node
     this.initSSEConnection();
 
-    // Sincronización multi-pestaña
+    // Sincronización multi-pestaña (si se abren varias pestañas)
     if (this.channel) {
       this.channel.onmessage = (event) => this.handleChannelMessage(event.data);
     }
@@ -90,13 +73,19 @@ class WhatsAppWebApp {
         this.renderMessages();
       }
     });
+
+    // Verificar si requiere login
+    if (!this.currentUser) {
+      this.openAuthScreen();
+    } else {
+      this.initAfterLogin();
+    }
   }
 
   // --- Sesión de Usuario ---
   loadSessionUser() {
     const urlParams = new URLSearchParams(window.location.search);
     const paramUser = urlParams.get('user');
-
     const defaultProfiles = this.shared ? this.shared.DEFAULT_PROFILES : [];
 
     if (paramUser) {
@@ -115,7 +104,7 @@ class WhatsAppWebApp {
       } catch (e) {}
     }
 
-    // Si aún no hay sesión, asignamos Edwin por defecto para primera vez o si tiene param
+    // Por defecto Edwin si no hay sesión
     const defaultUser = defaultProfiles[0] || null;
     if (defaultUser) {
       sessionStorage.setItem(this.userKey, JSON.stringify(defaultUser));
@@ -134,8 +123,9 @@ class WhatsAppWebApp {
     this.saveState();
 
     this.broadcastAction({ type: 'USER_UPSERT', user: this.currentUser, at: Date.now() });
+    this.initSSEConnection();
     this.initAfterLogin();
-    this.showToast(`¡Bienvenido a WhatsApp Web, ${this.currentUser.name}! 📱`);
+    this.showToast(`¡Conectado como ${this.currentUser.name}! 📱`);
   }
 
   initAfterLogin() {
@@ -143,13 +133,24 @@ class WhatsAppWebApp {
     this.renderContactsList();
     this.openChat(this.activeChatId);
     this.renderEmojiPicker();
+
+    // Notificar si está en file:// en lugar del servidor localhost:3000
+    if (window.location.protocol === 'file:') {
+      setTimeout(() => {
+        this.showToast('💡 Para conectar por WiFi con tu hermano, abre http://localhost:3000');
+      }, 1500);
+    }
   }
 
   logout() {
     sessionStorage.removeItem(this.userKey);
     this.currentUser = null;
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (e) {}
+      this.eventSource = null;
+    }
     this.openAuthScreen();
-    this.showToast('Sesión cerrada correctamente');
+    this.showToast('Sesión cerrada');
   }
 
   openAuthScreen() {
@@ -229,21 +230,31 @@ class WhatsAppWebApp {
     }
   }
 
-  // --- Conexión Server SSE ---
+  // --- Conexión Server SSE (Para chatear por WiFi entre Celular y PC) ---
   initSSEConnection() {
     this.isServerConnected = false;
     if (typeof EventSource === 'undefined' || !this.currentUser) return;
 
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (e) {}
+      this.eventSource = null;
+    }
+
+    if (window.location.protocol === 'file:') {
+      this.dom.connectionStatusText.textContent = 'Modo Local (file://)';
+      return;
+    }
+
     try {
       const userParam = encodeURIComponent(JSON.stringify(this.currentUser));
-      const es = new EventSource(`/api/events?user=${userParam}`);
+      this.eventSource = new EventSource(`/api/events?user=${userParam}`);
 
-      es.onopen = () => {
+      this.eventSource.onopen = () => {
         this.isServerConnected = true;
-        this.dom.connectionStatusText.textContent = 'En línea (Servidor)';
+        this.dom.connectionStatusText.textContent = 'En línea (WiFi)';
       };
 
-      es.onmessage = (event) => {
+      this.eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'STATE' && data.state) {
@@ -255,24 +266,26 @@ class WhatsAppWebApp {
             this.applyLocalAction(data.action);
             this.renderContactsList();
             this.renderMessages();
-            if (data.action.type === 'MESSAGE_NEW' && data.action.message.senderId !== this.currentUser.id) {
+            if (data.action.type === 'MESSAGE_NEW' && (!this.currentUser || data.action.message.senderId !== this.currentUser.id)) {
+              if (data.action.message.chatId === this.activeChatId && this.currentUser) {
+                this.broadcastAction({ type: 'READ', chatId: this.activeChatId, userId: this.currentUser.id });
+              }
               this.playBeepSound('receive');
             }
           } else if (data.type === 'TYPING') {
-            if (data.userId !== this.currentUser.id) {
+            if (!this.currentUser || data.userId !== this.currentUser.id) {
               this.updateContactTyping(data.chatId, data.userName, data.isTyping);
             }
           }
         } catch (err) {}
       };
 
-      es.onerror = () => {
+      this.eventSource.onerror = () => {
         this.isServerConnected = false;
-        this.dom.connectionStatusText.textContent = 'Sincronizado (Local)';
+        this.dom.connectionStatusText.textContent = 'Reconectando WiFi...';
       };
     } catch (e) {
       this.isServerConnected = false;
-      this.dom.connectionStatusText.textContent = 'Sincronizado (Local)';
     }
   }
 
@@ -341,10 +354,10 @@ class WhatsAppWebApp {
       menuItemSwitchUser: document.getElementById('menuItemSwitchUser'),
       menuItemLogout: document.getElementById('menuItemLogout'),
       menuItemClearAll: document.getElementById('menuItemClearAll'),
-      syncBanner: document.getElementById('syncBanner'),
-      syncBannerSubtext: document.getElementById('syncBannerSubtext'),
-      openNewTabBtn: document.getElementById('openNewTabBtn'),
-      closeBannerBtn: document.getElementById('closeBannerBtn'),
+      wifiBanner: document.getElementById('wifiBanner'),
+      wifiUrlText: document.getElementById('wifiUrlText'),
+      wifiShowQrBtn: document.getElementById('wifiShowQrBtn'),
+      wifiCopyUrlBtn: document.getElementById('wifiCopyUrlBtn'),
       searchInput: document.getElementById('searchInput'),
       clearSearchBtn: document.getElementById('clearSearchBtn'),
       filterPills: document.querySelectorAll('.filter-pill'),
@@ -369,7 +382,6 @@ class WhatsAppWebApp {
       whoIsTypingText: document.getElementById('whoIsTypingText'),
       voiceCallBtn: document.getElementById('voiceCallBtn'),
       videoCallBtn: document.getElementById('videoCallBtn'),
-      quickBotReplyBtn: document.getElementById('quickBotReplyBtn'),
       chatMenuBtn: document.getElementById('chatMenuBtn'),
       chatMenuDropdown: document.getElementById('chatMenuDropdown'),
       chatMenuInfo: document.getElementById('chatMenuInfo'),
@@ -408,7 +420,7 @@ class WhatsAppWebApp {
       audioRecordBtn: document.getElementById('audioRecordBtn'),
       sendBtn: document.getElementById('sendBtn'),
 
-      // Auth Overlay (Login por celular)
+      // Auth Overlay
       authOverlay: document.getElementById('authOverlay'),
       authStepPhone: document.getElementById('authStepPhone'),
       authCountrySelect: document.getElementById('authCountrySelect'),
@@ -483,7 +495,7 @@ class WhatsAppWebApp {
 
   // --- Listeners de Eventos ---
   initEventListeners() {
-    // 1. Envío de Mensajes
+    // 1. Envío de Mensajes (Solo mensajes reales de usuario)
     this.dom.sendBtn.addEventListener('click', () => this.sendMessage());
     this.dom.messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -577,20 +589,19 @@ class WhatsAppWebApp {
 
     document.addEventListener('click', () => this.closeAllMenus());
 
-    // Abrir 2da pestaña
-    const openSecondTab = () => {
-      const targetUser = (this.currentUser && this.currentUser.id === 'edwin') ? 'amigo' : 'edwin';
-      const url = `${window.location.origin}${window.location.pathname}?user=${targetUser}`;
-      window.open(url, '_blank', 'width=850,height=880');
-    };
-    this.dom.openNewTabBtn.addEventListener('click', openSecondTab);
-    this.dom.menuItemDualTab.addEventListener('click', () => {
-      this.dom.sidebarMenuDropdown.style.display = 'none';
-      openSecondTab();
-    });
-    this.dom.closeBannerBtn.addEventListener('click', () => {
-      this.dom.syncBanner.style.display = 'none';
-    });
+    // Banner WiFi
+    if (this.dom.wifiShowQrBtn) {
+      this.dom.wifiShowQrBtn.addEventListener('click', () => {
+        this.dom.qrModal.style.display = 'flex';
+      });
+    }
+    if (this.dom.wifiCopyUrlBtn) {
+      this.dom.wifiCopyUrlBtn.addEventListener('click', () => {
+        const url = 'http://192.168.101.73:3000';
+        navigator.clipboard.writeText(url);
+        this.showToast('Dirección copiada: http://192.168.101.73:3000 📱');
+      });
+    }
 
     // Switch user rápido
     this.dom.switchUserQuickBtn.addEventListener('click', () => {
@@ -653,7 +664,7 @@ class WhatsAppWebApp {
     this.dom.qrSimulatePairBtn.addEventListener('click', () => {
       this.dom.qrModal.style.display = 'none';
       this.playBeepSound('receive');
-      this.showToast('¡Dispositivo vinculado con éxito a WhatsApp Web! 📱');
+      this.showToast('¡Abre http://192.168.101.73:3000 en el celular de tu hermano! 📱');
     });
 
     // Estados
@@ -671,9 +682,6 @@ class WhatsAppWebApp {
     this.dom.callMuteBtn.addEventListener('click', () => {
       this.dom.callMuteBtn.classList.toggle('active');
     });
-
-    // Botón respuesta bot
-    this.dom.quickBotReplyBtn.addEventListener('click', () => this.simulateBotReply());
 
     // Vaciar chats
     this.dom.menuItemClearAll.addEventListener('click', () => {
@@ -779,11 +787,9 @@ class WhatsAppWebApp {
     const fullPhone = `${prefix} ${rawNumber}`;
     this.pendingAuthPhone = fullPhone;
 
-    // Generar código de 6 dígitos aleatorio
     const randomCode = String(Math.floor(100000 + Math.random() * 900000));
     this.pendingAuthCode = randomCode;
 
-    // Actualizar UI
     this.dom.verifyPhoneDisplay.textContent = fullPhone;
     this.dom.simulatedCodeText.innerHTML = `Tu código de WhatsApp Web es: <strong>${randomCode.slice(0, 3)}-${randomCode.slice(3)}</strong>`;
     this.dom.authCodeInput.value = '';
@@ -802,12 +808,10 @@ class WhatsAppWebApp {
       return;
     }
 
-    // Verificar si el usuario ya existe en base de datos por teléfono
     const existingUser = this.shared.findUserByPhone(this.state, this.pendingAuthPhone);
     if (existingUser) {
       this.setLoggedInUser(existingUser);
     } else {
-      // Usuario nuevo: pedir nombre y avatar
       this.dom.authStepCode.style.display = 'none';
       this.dom.authStepProfile.style.display = 'block';
       this.dom.newProfileNameInput.value = '';
@@ -846,11 +850,9 @@ class WhatsAppWebApp {
     const fullPhone = `${countryCode} ${rawNumber}`;
     const customName = this.dom.newChatOptionalName.value.trim();
 
-    // 1. Buscar si ya existe un usuario con este número
     let targetUser = this.shared.findUserByPhone(this.state, fullPhone);
 
     if (!targetUser) {
-      // 2. Si no existe, crear el contacto con este número de celular
       const norm = this.shared.normalizePhone(fullPhone);
       const targetId = 'c_' + norm.replace('+', '');
       targetUser = {
@@ -901,7 +903,7 @@ class WhatsAppWebApp {
     this.dom.audioOffIcon.style.display = this.soundsEnabled ? 'none' : 'block';
   }
 
-  // --- Envío de Mensajes ---
+  // --- Envío de Mensajes (Solo interacción real) ---
   sendMessage() {
     if (!this.currentUser) {
       this.openAuthScreen();
@@ -945,83 +947,7 @@ class WhatsAppWebApp {
     this.renderMessages();
     this.renderContactsList();
     this.scrollToBottom();
-
-    this.scheduleSmartContactReply(newMsg);
-  }
-
-  scheduleSmartContactReply(lastMsg) {
-    if (this.shared.isDM(this.activeChatId)) {
-      const participants = this.shared.dmParticipants(this.activeChatId);
-      const otherId = participants.find(id => id !== this.currentUser.id);
-      if (otherId && Math.random() > 0.3) {
-        const otherUser = this.state.users[otherId] || this.shared.DEFAULT_PROFILES.find(p => p.id === otherId);
-        if (otherUser) {
-          setTimeout(() => {
-            this.updateContactTyping(this.activeChatId, otherUser.name, true);
-            setTimeout(() => {
-              this.updateContactTyping(this.activeChatId, otherUser.name, false);
-              const replyText = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)];
-              const botMsg = {
-                id: 'msg-' + Date.now(),
-                chatId: this.activeChatId,
-                kind: 'text',
-                senderId: otherUser.id,
-                senderName: otherUser.name,
-                senderAvatar: otherUser.avatar,
-                senderPhone: otherUser.phone,
-                text: replyText,
-                timestamp: Date.now(),
-                reactions: {},
-                deliveredTo: [this.currentUser.id],
-                readBy: [this.currentUser.id]
-              };
-              this.broadcastAction({ type: 'MESSAGE_NEW', message: botMsg });
-              this.playBeepSound('receive');
-              this.renderMessages();
-              this.renderContactsList();
-              this.scrollToBottom();
-            }, 1400);
-          }, 900);
-        }
-      }
-    }
-  }
-
-  simulateBotReply() {
-    let partner;
-    if (this.shared.isDM(this.activeChatId)) {
-      const parts = this.shared.dmParticipants(this.activeChatId);
-      const otherId = parts.find(id => id !== this.currentUser.id);
-      partner = this.state.users[otherId] || this.shared.DEFAULT_PROFILES.find(p => p.id === otherId);
-    }
-    if (!partner) {
-      partner = (this.currentUser && this.currentUser.id === 'edwin') ? this.shared.DEFAULT_PROFILES[1] : this.shared.DEFAULT_PROFILES[0];
-    }
-
-    this.updateContactTyping(this.activeChatId, partner.name, true);
-    setTimeout(() => {
-      this.updateContactTyping(this.activeChatId, partner.name, false);
-      const randomReply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)];
-      const botMsg = {
-        id: 'msg-' + Date.now(),
-        chatId: this.activeChatId,
-        kind: 'text',
-        senderId: partner.id,
-        senderName: partner.name,
-        senderAvatar: partner.avatar,
-        senderPhone: partner.phone,
-        text: randomReply,
-        timestamp: Date.now(),
-        reactions: {},
-        deliveredTo: [this.currentUser.id],
-        readBy: [this.currentUser.id]
-      };
-      this.broadcastAction({ type: 'MESSAGE_NEW', message: botMsg });
-      this.playBeepSound('receive');
-      this.renderMessages();
-      this.renderContactsList();
-      this.scrollToBottom();
-    }, 1100);
+    // CERO respuestas automáticas de bot: solo tu hermano responderá desde su celular
   }
 
   // --- Notas de Voz Reales ---
@@ -1117,7 +1043,6 @@ class WhatsAppWebApp {
     this.renderMessages();
     this.renderContactsList();
     this.scrollToBottom();
-    this.scheduleSmartContactReply(voiceMsg);
   }
 
   // --- Imágenes ---
@@ -1220,7 +1145,7 @@ class WhatsAppWebApp {
       this.dom.chatPartnerName.textContent = 'Familia & Amigos (Grupo)';
       this.dom.chatPartnerPhone.style.display = 'none';
       this.dom.chatPartnerAvatar.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=Grupo&backgroundColor=00a884,128c7e';
-      this.dom.partnerStatusText.textContent = 'Edwin, Amigo, Janus, María y tú';
+      this.dom.partnerStatusText.textContent = 'Grupo oficial de WhatsApp';
       this.dom.partnerStatusDot.style.display = 'none';
       return;
     }
@@ -1272,7 +1197,6 @@ class WhatsAppWebApp {
     const profiles = this.shared.DEFAULT_PROFILES;
     const allUsers = { ...profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {}), ...(this.state.users || {}) };
 
-    // Buscar chats DM existentes
     Object.keys(this.state.chats).forEach(chatId => {
       if (chatId === this.shared.GENERAL_CHAT) return;
       if (this.currentUser && !this.shared.isParticipant(chatId, this.currentUser.id)) return;

@@ -237,15 +237,15 @@
         </div>
       </header>
 
-      <!-- Sync Banner (Realtime LAN / Multi-tab) -->
-      <div class="sync-banner" id="syncBanner">
-        <div class="sync-banner-icon">⚡</div>
-        <div class="sync-banner-text">
-          <strong>Sincronización por Número de Teléfono</strong>
-          <span id="syncBannerSubtext">Abre otra pestaña o usa la red WiFi para chatear entre números de WhatsApp.</span>
+      <!-- WiFi Cell Phone Connection Banner -->
+      <div class="wifi-network-banner" id="wifiBanner">
+        <div class="wifi-banner-icon">📶</div>
+        <div class="wifi-banner-text">
+          <strong>Celular de tu hermano (WiFi):</strong>
+          <span class="wifi-url-text" id="wifiUrlText">http://192.168.101.73:3000</span>
         </div>
-        <button id="openNewTabBtn" class="banner-action-btn" title="Abrir segunda pestaña">2da Pestaña</button>
-        <button id="closeBannerBtn" class="banner-close-btn" title="Cerrar">✕</button>
+        <button id="wifiShowQrBtn" class="banner-action-btn" title="Ver código QR para escanear con la cámara">Ver QR</button>
+        <button id="wifiCopyUrlBtn" class="banner-action-btn secondary" title="Copiar dirección">Copiar</button>
       </div>
 
       <!-- Search Bar -->
@@ -364,11 +364,6 @@
                 <polygon points="23 7 16 12 23 17 23 7"></polygon>
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
               </svg>
-            </button>
-
-            <!-- Auto Reply Simulation Bot Button -->
-            <button id="quickBotReplyBtn" class="action-chip" title="Simular respuesta automática de este contacto">
-              <span class="chip-spark">✨</span> Responder
             </button>
 
             <!-- Chat Options Menu (⋮) -->
@@ -634,10 +629,10 @@
       <div class="qr-modal-body">
         <div class="qr-instructions">
           <ol>
-            <li>Abre <strong>WhatsApp</strong> en tu teléfono</li>
-            <li>Toca <strong>Menú (⋮)</strong> o <strong>Configuración (⚙️)</strong> y selecciona <strong>Dispositivos vinculados</strong></li>
-            <li>Toca en <strong>Vincular un dispositivo</strong></li>
-            <li>Apunta tu teléfono hacia esta pantalla para escanear el código QR</li>
+            <li>Conecta el celular de tu hermano a la <strong>misma red WiFi</strong> que esta PC</li>
+            <li>Abre el navegador en su celular e ingresa a: <br><strong style="color:var(--accent-wa); font-size:1.05rem;">http://192.168.101.73:3000</strong></li>
+            <li>O simplemente escanea este código QR con la <strong>cámara del celular</strong></li>
+            <li>Inicia sesión con su propio número de celular y ¡listo para chatear en tiempo real!</li>
           </ol>
         </div>
         <div class="qr-code-box">

@@ -7,7 +7,7 @@ const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '❤️', '🎉', '🚀'
 
 class WhatsAppWebApp {
   constructor() {
-    this.storageKey = 'whatsapp_web_state_v2';
+    this.storageKey = 'whatsapp_web_state_v3';
     this.userKey = 'whatsapp_web_session_user';
     this.soundKey = 'whatsapp_web_sound_pref';
     this.themeKey = 'whatsapp_web_theme_pref';
@@ -172,7 +172,7 @@ class WhatsAppWebApp {
     } catch (e) {}
 
     const initial = this.shared ? this.shared.createInitialState() : {
-      version: 2,
+      version: 3,
       users: {},
       chats: { general: [] }
     };
@@ -686,8 +686,7 @@ class WhatsAppWebApp {
     // Vaciar chats
     this.dom.menuItemClearAll.addEventListener('click', () => {
       if (confirm('¿Deseas vaciar todas las conversaciones de WhatsApp Web?')) {
-        this.state.chats = { [this.shared.GENERAL_CHAT]: [] };
-        this.saveState();
+        this.broadcastAction({ type: 'CLEAR_ALL', at: Date.now() });
         this.renderContactsList();
         this.renderMessages();
         this.dom.sidebarMenuDropdown.style.display = 'none';

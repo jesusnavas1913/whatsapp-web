@@ -30,7 +30,7 @@ const STATIC_FILES = {
 let state;
 try {
   state = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  if (!state || state.version !== 2) throw new Error('versión antigua');
+  if (!state || state.version !== 3) throw new Error('versión antigua');
 } catch (e) {
   state = createInitialState();
 }

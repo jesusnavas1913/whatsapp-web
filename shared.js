@@ -90,126 +90,16 @@
 
   function createInitialState() {
     const now = Date.now();
-    const [edwin, amigo, janus, maria] = DEFAULT_PROFILES;
     const users = {};
     DEFAULT_PROFILES.forEach(p => {
-      users[p.id] = { ...p, lastSeen: now - Math.floor(Math.random() * 300000) };
+      users[p.id] = { ...p, lastSeen: now };
     });
 
-    const dmEA = dmChatId('edwin', 'amigo');
-    const dmEJ = dmChatId('edwin', 'janus');
-    const dmEM = dmChatId('edwin', 'maria');
-
     return {
-      version: 2,
+      version: 3,
       users,
       chats: {
-        [GENERAL_CHAT]: [
-          {
-            id: 'msg-g-1',
-            chatId: GENERAL_CHAT,
-            kind: 'text',
-            senderId: edwin.id,
-            senderName: edwin.name,
-            senderAvatar: edwin.avatar,
-            senderPhone: edwin.phone,
-            text: '¡Bienvenidos al grupo oficial de WhatsApp Web! 🚀💬',
-            timestamp: now - 1000 * 60 * 35,
-            reactions: { amigo: '🔥', janus: '👍' },
-            deliveredTo: ['amigo', 'janus', 'maria'],
-            readBy: ['amigo', 'janus']
-          },
-          {
-            id: 'msg-g-2',
-            chatId: GENERAL_CHAT,
-            kind: 'text',
-            senderId: amigo.id,
-            senderName: amigo.name,
-            senderAvatar: amigo.avatar,
-            senderPhone: amigo.phone,
-            text: '¡Ahora podemos iniciar sesión con nuestro número de celular como en el WhatsApp real! 📱✨',
-            timestamp: now - 1000 * 60 * 25,
-            reactions: { edwin: '❤️', maria: '👏' },
-            deliveredTo: ['edwin', 'janus', 'maria'],
-            readBy: ['edwin', 'janus']
-          },
-          {
-            id: 'msg-g-3',
-            chatId: GENERAL_CHAT,
-            kind: 'text',
-            senderId: janus.id,
-            senderName: janus.name,
-            senderAvatar: janus.avatar,
-            senderPhone: janus.phone,
-            text: 'Cualquier mensaje que envíes a un número de celular llega directo al destinatario en tiempo real ⚡',
-            timestamp: now - 1000 * 60 * 12,
-            reactions: { edwin: '🙌' },
-            deliveredTo: ['edwin', 'amigo', 'maria'],
-            readBy: ['edwin', 'amigo']
-          }
-        ],
-        [dmEA]: [
-          {
-            id: 'msg-ea-1',
-            chatId: dmEA,
-            kind: 'text',
-            senderId: amigo.id,
-            senderName: amigo.name,
-            senderAvatar: amigo.avatar,
-            senderPhone: amigo.phone,
-            text: '¡Hola Edwin! Te estoy escribiendo directamente a tu número (+57 300 111 2222) 📱',
-            timestamp: now - 1000 * 60 * 18,
-            reactions: {},
-            deliveredTo: ['edwin'],
-            readBy: ['edwin']
-          },
-          {
-            id: 'msg-ea-2',
-            chatId: dmEA,
-            kind: 'text',
-            senderId: edwin.id,
-            senderName: edwin.name,
-            senderAvatar: edwin.avatar,
-            senderPhone: edwin.phone,
-            text: '¡Recibido al instante! El sistema por número de teléfono quedó impecable 🚀',
-            timestamp: now - 1000 * 60 * 8,
-            reactions: { amigo: '🔥' },
-            deliveredTo: ['amigo'],
-            readBy: ['amigo']
-          }
-        ],
-        [dmEJ]: [
-          {
-            id: 'msg-ej-1',
-            chatId: dmEJ,
-            kind: 'text',
-            senderId: janus.id,
-            senderName: janus.name,
-            senderAvatar: janus.avatar,
-            senderPhone: janus.phone,
-            text: 'Hola, tu cuenta con número de celular quedó verificada y lista para recibir mensajes.',
-            timestamp: now - 1000 * 60 * 60,
-            reactions: {},
-            deliveredTo: ['edwin'],
-            readBy: ['edwin']
-          }
-        ],
-        [dmEM]: [
-          {
-            id: 'msg-em-1',
-            chatId: dmEM,
-            kind: 'text',
-            senderId: maria.id,
-            senderName: maria.name,
-            senderAvatar: maria.avatar,
-            senderPhone: maria.phone,
-            text: '¡Hola! Escríbeme a este número cuando estés libre 👋',
-            timestamp: now - 1000 * 60 * 90,
-            reactions: { edwin: '👍' },
-            deliveredTo: ['edwin'],
-            readBy: []
-          }
-        ]
+        [GENERAL_CHAT]: []
       }
     };
   }
@@ -340,6 +230,11 @@
       case 'CLEAR_CHAT': {
         if (!state.chats[action.chatId]) return false;
         state.chats[action.chatId] = [];
+        return true;
+      }
+
+      case 'CLEAR_ALL': {
+        state.chats = { [GENERAL_CHAT]: [] };
         return true;
       }
 

@@ -30,7 +30,7 @@ class WhatsAppWebApp {
       const otherId = this.currentUser.id === 'edwin' ? 'hermano' : 'edwin';
       this.activeChatId = this.shared.dmChatId(this.currentUser.id, otherId);
     } else {
-      this.activeChatId = this.shared ? this.shared.GENERAL_CHAT : 'general';
+      this.activeChatId = 'dm:edwin:hermano';
     }
 
     // Variables de auth por celular
@@ -149,8 +149,12 @@ class WhatsAppWebApp {
 
   initAfterLogin() {
     this.renderUserProfile();
-    this.renderContactsList();
+    // Chat directo predeterminado entre los dos (Edwin <-> Hermano)
+    const partnerId = (this.currentUser && this.currentUser.id === 'edwin') ? 'hermano' : 'edwin';
+    this.activeChatId = this.shared ? this.shared.dmChatId(this.currentUser ? this.currentUser.id : 'edwin', partnerId) : 'dm:edwin:hermano';
+    
     this.openChat(this.activeChatId);
+    this.renderContactsList();
     this.renderEmojiPicker();
 
     // Notificar si está en file:// en lugar del servidor localhost:3000
@@ -351,18 +355,25 @@ class WhatsAppWebApp {
 
           if (payload.type === 'ACTION' && payload.action) {
             this.applyLocalAction(payload.action);
-            this.renderContactsList();
-            this.renderMessages();
 
             if (payload.action.type === 'MESSAGE_NEW') {
               const m = payload.action.message;
               if (m && (!this.currentUser || m.senderId !== this.currentUser.id)) {
-                if (m.chatId === this.activeChatId && this.currentUser) {
+                // Si el mensaje es para mí o para nuestro chat directo, enfocarlo y mostrarlo
+                if (m.chatId === this.activeChatId || (this.shared && this.shared.isParticipant(m.chatId, this.currentUser.id))) {
+                  if (this.activeChatId !== m.chatId) {
+                    this.activeChatId = m.chatId;
+                    this.renderChatHeader();
+                  }
                   this.broadcastAction({ type: 'READ', chatId: this.activeChatId, userId: this.currentUser.id });
                 }
                 this.playBeepSound('receive');
               }
             }
+
+            this.renderContactsList();
+            this.renderMessages();
+            this.scrollToBottom();
           } else if (payload.type === 'TYPING') {
             if (!this.currentUser || payload.userId !== this.currentUser.id) {
               this.updateContactTyping(payload.chatId, payload.userName, payload.isTyping);
@@ -1219,7 +1230,7 @@ class WhatsAppWebApp {
       fetch('/api/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(typingPayload)
       }).catch(() => {});
     }
   }
@@ -1306,7 +1317,27 @@ class WhatsAppWebApp {
     this.dom.contactsList.innerHTML = '';
     const conversations = [];
 
-    // 1. Grupo General
+    // 1. Chat Directo Principal entre Edwin y Hermano (Siempre de primero!)
+    const partnerId = (this.currentUser && this.currentUser.id === 'edwin') ? 'hermano' : 'edwin';
+    const partnerProfile = this.shared.DEFAULT_PROFILES.find(p => p.id === partnerId) || this.shared.DEFAULT_PROFILES[1];
+    const directChatId = this.shared.dmChatId(this.currentUser ? this.currentUser.id : 'edwin', partnerId);
+    
+    const directMsgs = this.state.chats[directChatId] || [];
+    const lastDirect = directMsgs[directMsgs.length - 1];
+    const directUnread = directMsgs.filter(m => this.currentUser && m.senderId !== this.currentUser.id && (!m.readBy || !m.readBy.includes(this.currentUser.id))).length;
+
+    conversations.push({
+      chatId: directChatId,
+      name: partnerProfile.name,
+      phone: partnerProfile.phone,
+      avatar: partnerProfile.avatar,
+      isGroup: false,
+      lastMsg: lastDirect,
+      unread: directUnread,
+      hasStory: false
+    });
+
+    // 2. Grupo General
     const generalMsgs = this.state.chats[this.shared.GENERAL_CHAT] || [];
     const lastGeneral = generalMsgs[generalMsgs.length - 1];
     const generalUnread = generalMsgs.filter(m => this.currentUser && m.senderId !== this.currentUser.id && (!m.readBy || !m.readBy.includes(this.currentUser.id))).length;

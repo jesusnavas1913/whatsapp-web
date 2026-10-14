@@ -84,6 +84,11 @@ class WhatsAppWebApp {
       this.openAuthScreen();
     } else {
       this.initAfterLogin();
+    // P2P Auto-connect on startup
+    if (this.currentUser) {
+      this.initP2PConnection();
+    }
+    this.initP2PConnection();
     }
   }
 
@@ -210,6 +215,14 @@ class WhatsAppWebApp {
     if (this.channel) {
       this.channel.postMessage({ type: 'ACTION', action });
     }
+    // Retransmitir al celular o PC por P2P (WebRTC Vercel)
+    if (this.peerConnections && this.peerConnections.length > 0) {
+      this.peerConnections.forEach(c => {
+        if (c.open) {
+          try { c.send({ type: 'ACTION', action }); } catch (e) {}
+        }
+      });
+    }
     if (this.isServerConnected) {
       fetch('/api/action', {
         method: 'POST',
@@ -300,6 +313,134 @@ class WhatsAppWebApp {
     } catch (e) {
       this.isServerConnected = false;
     }
+  }
+
+
+  // --- WebRTC Peer-to-Peer (Funciona 100% en Vercel sin servidor ni base de datos) ---
+  initP2PConnection() {
+    if (typeof Peer === 'undefined' || !this.currentUser) return;
+    if (this.peer && !this.peer.destroyed) {
+      try { this.peer.destroy(); } catch (e) {}
+    }
+
+    this.peerConnections = [];
+    const myRole = this.currentUser.id === 'edwin' ? 'edwin' : (this.currentUser.id === 'hermano' ? 'hermano' : 'user_' + this.currentUser.id.slice(-6));
+    const partnerRole = myRole === 'edwin' ? 'hermano' : 'edwin';
+    
+    // ID único de sala para este chat (ambos se conectan aquí)
+    const myPeerId = 'wa-room-' + myRole;
+    const partnerPeerId = 'wa-room-' + partnerRole;
+
+    if (this.dom.connectionStatusText) {
+      this.dom.connectionStatusText.textContent = '🟡 Conectando P2P...';
+    }
+
+    try {
+      this.peer = new Peer(myPeerId, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      this.peer.on('open', (id) => {
+        console.log('✅ P2P abierto con ID:', id);
+        if (this.dom.connectionStatusText) {
+          this.dom.connectionStatusText.textContent = '🟢 Esperando hermano...';
+        }
+        // Intentar conectar con el otro usuario
+        setTimeout(() => this.connectToPeer(partnerPeerId), 800);
+      });
+
+      this.peer.on('connection', (conn) => {
+        console.log('⚡ Conexión entrante de:', conn.peer);
+        this.setupPeerDataConnection(conn);
+      });
+
+      this.peer.on('error', (err) => {
+        console.warn('P2P Status:', err.type);
+        if (err.type === 'peer-unavailable') {
+          // El otro usuario aún no se ha conectado, reintentar cada 4 segundos
+          setTimeout(() => this.connectToPeer(partnerPeerId), 4000);
+        } else if (err.type === 'unavailable-id') {
+          // Si el ID está tomado temporalmente, generar variante
+          const altId = myPeerId + '-' + Math.floor(Math.random() * 1000);
+          this.peer = new Peer(altId);
+        }
+      });
+    } catch (e) {
+      console.warn('Error iniciando PeerJS:', e);
+    }
+  }
+
+  connectToPeer(targetId) {
+    if (!this.peer || this.peer.destroyed) return;
+    if (this.peerConnections && this.peerConnections.some(c => c.peer === targetId && c.open)) return;
+
+    try {
+      const conn = this.peer.connect(targetId, { reliable: true });
+      this.setupPeerDataConnection(conn);
+    } catch (e) {}
+  }
+
+  setupPeerDataConnection(conn) {
+    conn.on('open', () => {
+      console.log('🎉 Conexión P2P directa establecida con:', conn.peer);
+      if (!this.peerConnections) this.peerConnections = [];
+      if (!this.peerConnections.includes(conn)) {
+        this.peerConnections.push(conn);
+      }
+      if (this.dom.connectionStatusText) {
+        this.dom.connectionStatusText.textContent = '🟢 En vivo P2P';
+      }
+      this.showToast('⚡ ¡Conectado en directo con ' + (this.currentUser.id === 'edwin' ? 'Hermano' : 'Edwin') + '! Listo para chatear.');
+    });
+
+    conn.on('data', (data) => {
+      try {
+        const payload = typeof data === 'string' ? JSON.parse(data) : data;
+        if (!payload) return;
+
+        if (payload.type === 'ACTION' && payload.action) {
+          this.applyLocalAction(payload.action);
+          this.renderContactsList();
+          this.renderMessages();
+
+          if (payload.action.type === 'MESSAGE_NEW') {
+            const m = payload.action.message;
+            if (m && (!this.currentUser || m.senderId !== this.currentUser.id)) {
+              if (m.chatId === this.activeChatId && this.currentUser) {
+                this.broadcastAction({ type: 'READ', chatId: this.activeChatId, userId: this.currentUser.id });
+              }
+              this.playBeepSound('receive');
+            }
+          }
+        } else if (payload.type === 'TYPING') {
+          if (!this.currentUser || payload.userId !== this.currentUser.id) {
+            this.updateContactTyping(payload.chatId, payload.userName, payload.isTyping);
+          }
+        }
+      } catch (err) {
+        console.warn('Error procesando datos P2P:', err);
+      }
+    });
+
+    conn.on('close', () => {
+      if (this.peerConnections) {
+        this.peerConnections = this.peerConnections.filter(c => c !== conn);
+      }
+      if (!this.peerConnections || this.peerConnections.length === 0) {
+        if (this.dom.connectionStatusText) {
+          this.dom.connectionStatusText.textContent = '🟡 Buscando conexión...';
+        }
+        const myRole = this.currentUser.id === 'edwin' ? 'edwin' : (this.currentUser.id === 'hermano' ? 'hermano' : 'user');
+        const partnerRole = myRole === 'edwin' ? 'hermano' : 'edwin';
+        setTimeout(() => this.connectToPeer('wa-room-' + partnerRole), 3500);
+      }
+    });
   }
 
   // --- Sonidos Procedimentales ---

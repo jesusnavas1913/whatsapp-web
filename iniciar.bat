@@ -27,7 +27,7 @@ echo.
 echo ==============================================================
 echo   Iniciando Servidor WhatsApp Web en Tiempo Real...
 echo   En esta PC:         http://localhost:3000
-echo   En el Celular WiFi:  http://192.168.101.73:3000
+echo   En el Celular WiFi:  http://192.168.101.73:3000/?user=hermano
 echo ==============================================================
 echo.
 start "" http://localhost:3000

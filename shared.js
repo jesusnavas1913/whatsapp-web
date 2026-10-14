@@ -21,16 +21,16 @@
       }
     },
     {
-      id: 'amigo',
+      id: 'hermano',
       phone: '+57 300 222 3333',
-      name: 'Amigo',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Amigo&backgroundColor=25d366,00a884',
+      name: 'Hermano',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Hermano&backgroundColor=25d366,00a884',
       color: '#25d366',
-      status: 'Disponible para chatear 📱',
+      status: 'Conectado desde el celular 📱',
       hasStory: true,
       story: {
-        text: 'Probando la sincronización en tiempo real por número de WhatsApp ⚡',
-        time: 'Hace 45 min',
+        text: '¡Conectado desde el celular por WiFi con mi hermano! ⚡📱',
+        time: 'Hace 5 min',
         bg: 'linear-gradient(135deg, #25d366 0%, #075e54 100%)'
       }
     },

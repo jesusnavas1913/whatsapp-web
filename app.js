@@ -24,8 +24,13 @@ class WhatsAppWebApp {
     // Sesión de usuario activo
     this.currentUser = this.loadSessionUser();
 
-    // Chat activo por defecto
-    this.activeChatId = this.shared ? this.shared.GENERAL_CHAT : 'general';
+    // Chat activo por defecto: Chat directo 1-a-1 entre Edwin y Hermano
+    if (this.currentUser && this.shared) {
+      const otherId = this.currentUser.id === 'edwin' ? 'hermano' : 'edwin';
+      this.activeChatId = this.shared.dmChatId(this.currentUser.id, otherId);
+    } else {
+      this.activeChatId = this.shared ? this.shared.GENERAL_CHAT : 'general';
+    }
 
     // Variables de auth por celular
     this.pendingAuthPhone = '';
@@ -89,7 +94,13 @@ class WhatsAppWebApp {
     const defaultProfiles = this.shared ? this.shared.DEFAULT_PROFILES : [];
 
     if (paramUser) {
-      const match = defaultProfiles.find(p => p.id.toLowerCase() === paramUser.toLowerCase() || this.shared.normalizePhone(p.phone) === this.shared.normalizePhone(paramUser));
+      const pLower = paramUser.toLowerCase();
+      const match = defaultProfiles.find(p => 
+        p.id.toLowerCase() === pLower || 
+        p.name.toLowerCase() === pLower ||
+        (p.id === 'hermano' && (pLower === 'amigo' || pLower === 'celular')) ||
+        this.shared.normalizePhone(p.phone) === this.shared.normalizePhone(paramUser)
+      );
       if (match) {
         sessionStorage.setItem(this.userKey, JSON.stringify(match));
         return { ...match };
@@ -104,13 +115,15 @@ class WhatsAppWebApp {
       } catch (e) {}
     }
 
-    // Por defecto Edwin si no hay sesión
-    const defaultUser = defaultProfiles[0] || null;
+    // Si es móvil o pantalla táctil pequeña (el celular de tu hermano), entrar como Hermano.
+    // Si es PC o pantalla grande, entrar como Edwin.
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (typeof window !== 'undefined' && window.innerWidth <= 768);
+    const defaultUser = isMobile ? (defaultProfiles.find(p => p.id === 'hermano') || defaultProfiles[1]) : defaultProfiles[0];
     if (defaultUser) {
       sessionStorage.setItem(this.userKey, JSON.stringify(defaultUser));
-      return defaultUser;
+      return { ...defaultUser };
     }
-    return null;
+    return defaultProfiles[0] || null;
   }
 
   setLoggedInUser(user) {
@@ -441,6 +454,8 @@ class WhatsAppWebApp {
       newProfileStatusInput: document.getElementById('newProfileStatusInput'),
       authSaveProfileBtn: document.getElementById('authSaveProfileBtn'),
       quickAccBtns: document.querySelectorAll('.quick-acc-btn'),
+      directNameInput: document.getElementById('directNameInput'),
+      directEnterBtn: document.getElementById('directEnterBtn'),
 
       // Modals
       storiesModal: document.getElementById('storiesModal'),
@@ -539,7 +554,7 @@ class WhatsAppWebApp {
 
     this.dom.authSaveProfileBtn.addEventListener('click', () => this.handleAuthSaveNewProfile());
 
-    // Cuentas rápidas de prueba
+    // Cuentas rápidas de prueba y selección 1-clic (sin códigos)
     this.dom.quickAccBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
@@ -550,6 +565,26 @@ class WhatsAppWebApp {
         }
       });
     });
+
+    if (this.dom.directEnterBtn && this.dom.directNameInput) {
+      this.dom.directEnterBtn.addEventListener('click', () => {
+        const name = this.dom.directNameInput.value.trim();
+        if (!name) return;
+        const id = 'user_' + Date.now().toString(36);
+        const user = {
+          id,
+          name,
+          phone: '+57 300 ' + Math.floor(1000000 + Math.random() * 9000000),
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=00a884,128c7e`,
+          color: '#00a884',
+          status: '¡Hola! Estoy usando WhatsApp Web 🚀'
+        };
+        this.setLoggedInUser(user);
+      });
+      this.dom.directNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.dom.directEnterBtn.click();
+      });
+    }
 
     // Logout
     this.dom.menuItemLogout.addEventListener('click', () => {

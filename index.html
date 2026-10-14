@@ -19,7 +19,7 @@
   <div class="ambient-glow glow-1"></div>
   <div class="ambient-glow glow-2"></div>
 
-  <!-- ==================== WHATSAPP PHONE LOGIN / REGISTRATION OVERLAY ==================== -->
+  <!-- ==================== WHATSAPP SELECCION DIRECTA DE PERFIL (SIN CODIGOS) ==================== -->
   <div id="authOverlay" class="auth-overlay" style="display:none;">
     <div class="auth-card">
       <div class="auth-brand">
@@ -29,119 +29,46 @@
           </svg>
         </div>
         <h2>WhatsApp Web</h2>
-        <span class="auth-tagline">Inicia sesión con tu número de celular</span>
+        <span class="auth-tagline">Elige tu perfil para chatear por Wi-Fi</span>
       </div>
 
-      <!-- Step 1: Input Phone Number -->
+      <!-- Selector Rápido 1-Clic -->
       <div id="authStepPhone" class="auth-step-pane">
-        <p class="auth-instruction">
-          Selecciona tu país e ingresa tu número móvil para conectarte o crear tu cuenta:
+        <p class="auth-instruction" style="text-align: center; margin-bottom: 16px;">
+          Toca tu perfil para entrar directamente (sin códigos ni contraseñas):
         </p>
-        <div class="auth-input-group">
-          <label>País</label>
-          <select id="authCountrySelect" class="auth-select">
-            <option value="+57" selected>🇨🇴 Colombia (+57)</option>
-            <option value="+52">🇲🇽 México (+52)</option>
-            <option value="+34">🇪🇸 España (+34)</option>
-            <option value="+54">🇦🇷 Argentina (+54)</option>
-            <option value="+51">🇵🇪 Perú (+51)</option>
-            <option value="+56">🇨🇱 Chile (+56)</option>
-            <option value="+1">🇺🇸 Estados Unidos (+1)</option>
-          </select>
+
+        <div class="quick-accounts-list" style="margin-bottom: 20px;">
+          <button class="quick-acc-btn" data-id="edwin" style="border: 2px solid var(--accent-wa); background: rgba(0,168,132,0.12); padding: 14px;">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Edwin&backgroundColor=00a884,128c7e">
+            <div>
+              <strong style="font-size: 1.05rem;">💻 Edwin (PC)</strong>
+              <span>+57 300 111 2222</span>
+            </div>
+          </button>
+
+          <button class="quick-acc-btn" data-id="hermano" style="border: 2px solid #25d366; background: rgba(37,211,102,0.12); padding: 14px;">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Hermano&backgroundColor=25d366,00a884">
+            <div>
+              <strong style="font-size: 1.05rem;">📱 Hermano (Celular)</strong>
+              <span>+57 300 222 3333</span>
+            </div>
+          </button>
         </div>
 
-        <div class="auth-input-group">
-          <label>Número de teléfono</label>
-          <div class="auth-phone-row">
-            <span id="authCountryCodeDisplay" class="auth-prefix">+57</span>
-            <input type="tel" id="authPhoneInput" placeholder="300 123 4567" autocomplete="off" maxlength="15">
-          </div>
-        </div>
-
-        <button id="authSendCodeBtn" class="btn primary btn-full margin-top-md">Continuar y Recibir Código SMS</button>
-
-        <!-- Quick Access for Testing / One-click log in -->
-        <div class="quick-access-box">
-          <span class="quick-access-label">O inicia sesión rápida con una cuenta de prueba:</span>
-          <div class="quick-accounts-list">
-            <button class="quick-acc-btn" data-phone="+57 300 111 2222" data-id="edwin" data-name="Edwin">
-              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Edwin&backgroundColor=00a884,128c7e">
-              <div>
-                <strong>Edwin</strong>
-                <span>+57 300 111 2222</span>
-              </div>
-            </button>
-            <button class="quick-acc-btn" data-phone="+57 300 222 3333" data-id="amigo" data-name="Amigo">
-              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Amigo&backgroundColor=25d366,00a884">
-              <div>
-                <strong>Amigo</strong>
-                <span>+57 300 222 3333</span>
-              </div>
-            </button>
-            <button class="quick-acc-btn" data-phone="+57 300 444 5555" data-id="janus" data-name="Janus">
-              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Janus&backgroundColor=8b5cf6,3b82f6">
-              <div>
-                <strong>Janus</strong>
-                <span>+57 300 444 5555</span>
-              </div>
-            </button>
-            <button class="quick-acc-btn" data-phone="+57 300 777 8888" data-id="maria" data-name="María">
-              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Maria&backgroundColor=f59e0b,ef4444">
-              <div>
-                <strong>María</strong>
-                <span>+57 300 777 8888</span>
-              </div>
-            </button>
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">O escribe cualquier nombre para entrar directo:</p>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="directNameInput" placeholder="Tu nombre..." class="auth-input-text" style="flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-main);">
+            <button id="directEnterBtn" class="btn primary" style="white-space: nowrap;">Entrar</button>
           </div>
         </div>
       </div>
 
-      <!-- Step 2: SMS Verification Code -->
-      <div id="authStepCode" class="auth-step-pane" style="display:none;">
-        <p class="auth-instruction">
-          Te hemos enviado un código de 6 dígitos al <strong id="verifyPhoneDisplay">+57 300 123 4567</strong>:
-        </p>
-
-        <!-- Simulated WhatsApp SMS Push notification banner -->
-        <div class="simulated-sms-banner">
-          <span class="sms-icon">📩</span>
-          <div class="sms-text">
-            <strong>Mensaje SMS recibido:</strong>
-            <span id="simulatedCodeText">Tu código de WhatsApp Web es: <strong>489-102</strong></span>
-          </div>
-          <button id="autoFillCodeBtn" class="sms-action-btn">Autocompletar</button>
-        </div>
-
-        <div class="sms-boxes-container">
-          <input type="text" maxlength="6" id="authCodeInput" placeholder="1 2 3 4 5 6" class="sms-big-input" autocomplete="off">
-        </div>
-
-        <div class="auth-actions-row margin-top-md">
-          <button id="authBackToPhoneBtn" class="btn secondary">Atrás</button>
-          <button id="authVerifyCodeBtn" class="btn primary">Verificar Código</button>
-        </div>
-      </div>
-
-      <!-- Step 3: Profile Setup (Only for new phone numbers) -->
-      <div id="authStepProfile" class="auth-step-pane" style="display:none;">
-        <p class="auth-instruction">
-          ¡Número verificado! Crea tu perfil de WhatsApp para comenzar:
-        </p>
-        <div class="profile-setup-avatar-wrap">
-          <img id="newProfileAvatarPreview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Nuevo&backgroundColor=00a884,128c7e">
-          <button id="randomizeAvatarBtn" class="avatar-dice-btn" title="Generar otro avatar">🎲</button>
-        </div>
-        <div class="auth-input-group margin-top-md">
-          <label>Tu Nombre</label>
-          <input type="text" id="newProfileNameInput" placeholder="Ej: Carlos Gómez" class="auth-input-text" maxlength="25">
-        </div>
-        <div class="auth-input-group">
-          <label>Estado (Info)</label>
-          <input type="text" id="newProfileStatusInput" value="¡Hola! Estoy usando WhatsApp 🚀" class="auth-input-text" maxlength="40">
-        </div>
-        <button id="authSaveProfileBtn" class="btn primary btn-full margin-top-md">Iniciar WhatsApp Web</button>
-      </div>
-
+      <!-- Hidden placeholders for backwards compatibility -->
+      <div id="authStepCode" style="display:none;"><input id="authCodeInput"><span id="verifyPhoneDisplay"></span><span id="simulatedCodeText"></span><button id="autoFillCodeBtn"></button><button id="authBackToPhoneBtn"></button><button id="authVerifyCodeBtn"></button></div>
+      <div id="authStepProfile" style="display:none;"><img id="newProfileAvatarPreview"><button id="randomizeAvatarBtn"></button><input id="newProfileNameInput"><input id="newProfileStatusInput"><button id="authSaveProfileBtn"></button></div>
+      <div style="display:none;"><select id="authCountrySelect"><option value="+57">+57</option></select><span id="authCountryCodeDisplay">+57</span><input id="authPhoneInput"><button id="authSendCodeBtn"></button></div>
     </div>
   </div>
 
@@ -630,9 +557,9 @@
         <div class="qr-instructions">
           <ol>
             <li>Conecta el celular de tu hermano a la <strong>misma red WiFi</strong> que esta PC</li>
-            <li>Abre el navegador en su celular e ingresa a: <br><strong style="color:var(--accent-wa); font-size:1.05rem;">http://192.168.101.73:3000</strong></li>
+            <li>Abre el navegador en su celular e ingresa a: <br><strong style="color:var(--accent-wa); font-size:1.05rem;">http://192.168.101.73:3000/?user=hermano</strong></li>
             <li>O simplemente escanea este código QR con la <strong>cámara del celular</strong></li>
-            <li>Inicia sesión con su propio número de celular y ¡listo para chatear en tiempo real!</li>
+            <li>Entra directo como Hermano (sin códigos SMS) y ¡listo para escribir en vivo!</li>
           </ol>
         </div>
         <div class="qr-code-box">
